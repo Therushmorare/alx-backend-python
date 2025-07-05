@@ -1,4 +1,4 @@
-Objective
+
     Write a python script that seed.py:
         Set up the MySQL database, ALX_prodev with the table user_data with the following fields:
         user_id(Primary Key, UUID, Indexed)
