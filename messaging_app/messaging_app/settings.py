@@ -60,6 +60,8 @@ REST_FRAMEWORK = {
     ],
 }
 
+AUTH_USER_MODEL = 'chats.CustomUser'
+
 ROOT_URLCONF = 'messaging_app.urls'
 
 TEMPLATES = [
