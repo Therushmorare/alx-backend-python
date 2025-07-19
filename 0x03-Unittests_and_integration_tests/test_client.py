@@ -120,5 +120,56 @@ class TestIntegrationGithubOrgClient(unittest.TestCase):
         client = GithubOrgClient("google")
         self.assertEqual(client.public_repos(license="apache-2.0"), self.apache2_repos)
 
+@parameterized_class([
+    {
+        "org_payload": {
+            "login": "google",
+            "url": "https://api.github.com/orgs/google"
+        },
+        "repos_payload": [
+            {"name": "repo1", "license": {"key": "apache-2.0"}},
+            {"name": "repo2", "license": {"key": "mit"}},
+            {"name": "repo3", "license": {"key": "apache-2.0"}},
+        ],
+        "expected_repos": ["repo1", "repo2", "repo3"],
+        "apache2_repos": ["repo1", "repo3"]
+    }
+])
+class TestIntegrationGithubOrgClient(unittest.TestCase):
+    """Integration tests for GithubOrgClient"""
+
+    @classmethod
+    def setUpClass(cls):
+        """Start patching requests.get and mock API responses."""
+        cls.get_patcher = patch("requests.get")
+        mock_get = cls.get_patcher.start()
+
+        def side_effect(url):
+            mock_response = MagicMock()
+            if url == "https://api.github.com/orgs/google":
+                mock_response.json.return_value = cls.org_payload
+            elif url == "https://api.github.com/orgs/google/repos":
+                mock_response.json.return_value = cls.repos_payload
+            return mock_response
+
+        mock_get.side_effect = side_effect
+
+    @classmethod
+    def tearDownClass(cls):
+        """Stop patching requests.get"""
+        cls.get_patcher.stop()
+
+    def test_public_repos(self):
+        """Test public_repos method returns all repository names"""
+        from client import GithubOrgClient
+        client = GithubOrgClient("google")
+        self.assertEqual(client.public_repos(), self.expected_repos)
+
+    def test_public_repos_with_license(self):
+        """Test public_repos method filters by license correctly"""
+        from client import GithubOrgClient
+        client = GithubOrgClient("google")
+        self.assertEqual(client.public_repos(license="apache-2.0"), self.apache2_repos)
+
 if __name__ == "__main__":
     unittest.main()
