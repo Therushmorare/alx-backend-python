@@ -44,7 +44,7 @@ class TestMemoize(unittest.TestCase):
     """Test case for the memoize decorator."""
 
     def test_memoize(self):
-        """Test that memoization caches the result after first call."""
+        """Test that memoize caches the result of a_property."""
 
         class TestClass:
             def a_method(self):
@@ -55,9 +55,9 @@ class TestMemoize(unittest.TestCase):
                 return self.a_method()
 
         with patch.object(TestClass, 'a_method', return_value=42) as mock_method:
-            test_obj = TestClass()
-            result1 = test_obj.a_property()
-            result2 = test_obj.a_property()
+            obj = TestClass()
+            result1 = obj.a_property
+            result2 = obj.a_property
 
             self.assertEqual(result1, 42)
             self.assertEqual(result2, 42)
