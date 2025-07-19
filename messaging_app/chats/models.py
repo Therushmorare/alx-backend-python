@@ -24,7 +24,6 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.username} ({self.role})"
 
-
 class Conversation(models.Model):
     conversation_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_index=True)
     participants = models.ManyToManyField(User, related_name='conversations')
