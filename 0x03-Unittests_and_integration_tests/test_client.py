@@ -44,9 +44,9 @@ class TestGithubOrgClient(unittest.TestCase):
     def test_public_repos(self, mock_get_json):
         """Test GithubOrgClient.public_repos returns expected repo names."""
         mock_payload = [
-            {"name": "repo1"},
-            {"name": "repo2"},
-            {"name": "repo3"},
+            {"name": "https://github.com/torvalds/linux"},
+            {"name": "https://github.com/microsoft/vscode"},
+            {"name": "https://github.com/tensorflow/tensorflow"},
         ]
         mock_get_json.return_value = mock_payload
         client = GithubOrgClient("test_org")
