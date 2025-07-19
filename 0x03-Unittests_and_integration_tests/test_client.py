@@ -6,7 +6,7 @@ from client import GithubOrgClient
 
 
 class TestGithubOrgClient(unittest.TestCase):
-    """Tests for the GithubOrgClient class."""
+    """Test the GithubOrgClient class."""
 
     @parameterized.expand([
         ("google",),
@@ -14,12 +14,20 @@ class TestGithubOrgClient(unittest.TestCase):
     ])
     @patch("client.get_json")
     def test_org(self, org_name, mock_get_json):
-        """Test that GithubOrgClient.org returns the expected value and get_json is called with correct URL."""
-        expected_response = {"login": org_name}
-        mock_get_json.return_value = expected_response
+        """Test that GithubOrgClient.org returns correct data and calls get_json once."""
+
+        # Setup the mock to return a predictable response
+        expected_payload = {"login": org_name}
+        mock_get_json.return_value = expected_payload
 
         client = GithubOrgClient(org_name)
         result = client.org
 
-        self.assertEqual(result, expected_response)
+        # Assert the result matches expected payload
+        self.assertEqual(result, expected_payload)
+        # Assert get_json was called exactly once with the correct URL
         mock_get_json.assert_called_once_with(f"https://api.github.com/orgs/{org_name}")
+
+
+if __name__ == "__main__":
+    unittest.main()
