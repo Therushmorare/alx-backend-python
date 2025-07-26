@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
 from django.contrib.auth import get_user_model
+from .permissions import IsParticipantOfConversation
 
 User = get_user_model()
 
@@ -43,7 +44,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
 
 class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsParticipantOfConversation]
     filter_backends = [filters.OrderingFilter]
     ordering = ['-sent_at']
 
