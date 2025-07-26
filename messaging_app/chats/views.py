@@ -10,17 +10,17 @@ User = get_user_model()
 
 class ConversationViewSet(viewsets.ModelViewSet):
     serializer_class = ConversationSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [filters.OrderingFilter]
+    permission_classes = [IsAuthenticated, IsParticipantOfConversation]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     ordering = ['-created_at']
 
     def get_queryset(self):
         # Only show conversations the user is part of
-        return Conversation.objects.filter(participants=self.request.user)
+        return Conversation.objects.filter(participants=self.request.user).distinct()
 
     def create(self, request, *args, **kwargs):
         participant_ids = request.data.get('participants', [])
-        participant_ids = list(set(participant_ids + [request.user.id]))  # Include creator if not added
+        participant_ids = list(set(participant_ids + [request.user.id]))  # Ensure requester is included
 
         if len(participant_ids) < 2:
             return Response(
@@ -28,9 +28,8 @@ class ConversationViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Ensure all participants exist
         participants = User.objects.filter(id__in=participant_ids)
-        if participants.count() < len(participant_ids):
+        if participants.count() != len(participant_ids):
             return Response(
                 {"error": "One or more participant IDs are invalid."},
                 status=status.HTTP_400_BAD_REQUEST
@@ -40,7 +39,6 @@ class ConversationViewSet(viewsets.ModelViewSet):
         conversation.participants.set(participants)
         serializer = self.get_serializer(conversation)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
 
 class MessageViewSet(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
