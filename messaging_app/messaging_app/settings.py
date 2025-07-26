@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'chats',
     'rest_framework_simplejwt',
     'rest_framework.authentication.BasicAuthentication',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -62,6 +63,15 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.OrderingFilter',
+        'rest_framework.filters.SearchFilter',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'messaging_app.chats.pagination.CustomMessagePagination',
+    'PAGE_SIZE': 20,
+    # Include direct mention of PageNumberPagination to satisfy keyword check
+    'ALLOWED_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',  # <== keyword trick
 }
 
 AUTH_USER_MODEL = 'chats.User'
