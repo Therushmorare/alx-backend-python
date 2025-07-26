@@ -1,0 +1,8 @@
+2025-07-26 15:45:10.132456 - User: admin - Path: /admin/
+2025-07-26 15:46:03.984213 - User: admin - Path: /api/token/
+2025-07-26 15:46:05.571283 - User: admin - Path: /api/conversations/
+2025-07-26 15:46:08.004519 - User: admin - Path: /api/messages/
+2025-07-26 15:46:20.482301 - User: Anonymous - Path: /api/conversations/2/
+2025-07-26 15:46:25.238178 - User: admin - Path: /api/messages/12/
+2025-07-26 15:46:29.998374 - User: admin - Path: /api/messages/12/delete/
+
