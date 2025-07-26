@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 from django.http import HttpResponseForbidden
+from collections import defaultdict
 
 class RequestLoggingMiddleware:
     def __init__(self, get_response):
@@ -28,3 +29,33 @@ class RestrictAccessByTimeMiddleware:
 
         return self.get_response(request)
 
+class OffensiveLanguageMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.request_logs = defaultdict(list)  # IP -> [timestamps]
+
+    def __call__(self, request):
+        if request.method == "POST":
+            ip_address = self.get_client_ip(request)
+            current_time = datetime.now()
+
+            # Remove timestamps older than 1 minute
+            self.request_logs[ip_address] = [
+                timestamp for timestamp in self.request_logs[ip_address]
+                if current_time - timestamp < timedelta(minutes=1)
+            ]
+
+            if len(self.request_logs[ip_address]) >= 5:
+                return HttpResponseForbidden("Rate limit exceeded. You can only send 5 messages per minute.")
+
+            self.request_logs[ip_address].append(current_time)
+
+        return self.get_response(request)
+
+    def get_client_ip(self, request):
+        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(",")[0]
+        else:
+            ip = request.META.get("REMOTE_ADDR")
+        return ip
