@@ -5,6 +5,8 @@ from .models import Conversation, Message
 from .serializers import ConversationSerializer, MessageSerializer
 from django.contrib.auth import get_user_model
 from .permissions import IsParticipantOfConversation
+from django_filters.rest_framework import DjangoFilterBackend
+from .filters import MessageFilter
 
 User = get_user_model()
 
@@ -12,7 +14,9 @@ class ConversationViewSet(viewsets.ModelViewSet):
     serializer_class = ConversationSerializer
     permission_classes = [IsAuthenticated, IsParticipantOfConversation]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    ordering = ['-created_at']
+    filterset_class = MessageFilter
+    ordering = ['-sent_at']
+    pagination_class = CustomMessagePagination
 
     def get_queryset(self):
         # Only show conversations the user is part of
