@@ -21,6 +21,15 @@ class IsParticipantOfConversation(BasePermission):
         return request.user and request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
-        # obj can be either a Message or a Conversation
-        conversation = getattr(obj, 'conversation', obj)  # works for both Message and Conversation
-        return request.user in conversation.participants.all()
+        # Get the related conversation
+        conversation = getattr(obj, 'conversation', obj)
+
+        # Check if user is a participant
+        is_participant = request.user in conversation.participants.all()
+
+        # Explicitly handle unsafe methods
+        if request.method in ["PUT", "PATCH", "DELETE"]:
+            return is_participant
+
+        # Allow other methods (e.g., GET, POST) only if user is a participant
+        return is_participant
