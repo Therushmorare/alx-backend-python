@@ -7,6 +7,9 @@ from django.contrib.auth import get_user_model
 from .permissions import IsParticipantOfConversation
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import MessageFilter
+from django.views.decorators.cache import cache_page
+from django.shortcuts import render
+from .models import Message
 
 User = get_user_model()
 
@@ -77,3 +80,7 @@ class MessageViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+@cache_page(60)  # Caches for 60 seconds
+def conversation_view(request):
+    messages = Message.objects.all().select_related('sender', 'receiver')
+    return render(request, 'chats/conversation.html', {'messages': messages})
