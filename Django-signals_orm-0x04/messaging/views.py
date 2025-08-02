@@ -9,3 +9,14 @@ def delete_user(request):
     user.delete()
     messages.success(request, "Your account and related data have been deleted.")
     return redirect('home')  # Redirect to a suitable view after deletion
+
+@login_required
+def threaded_conversations(request):
+    # Top-level messages only (not replies)
+    messages = Message.objects.filter(
+        parent_message__isnull=True
+    ).select_related('sender', 'receiver').prefetch_related(
+        'replies__sender', 'replies__receiver'
+    )
+
+    return render(request, 'messaging/threaded.html', {'messages': messages})
