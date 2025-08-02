@@ -2,7 +2,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.shortcuts import redirect
 from django.contrib import messages
+from django.views.decorators.cache import cache_page
+from django.shortcuts import render
 
+@cache_page(60)
 @login_required
 def delete_user(request):
     user = request.user
@@ -10,6 +13,7 @@ def delete_user(request):
     messages.success(request, "Your account and related data have been deleted.")
     return redirect('home')  # Redirect to a suitable view after deletion
 
+@cache_page(60)
 @login_required
 def threaded_conversations(request):
     # Top-level messages only (not replies)
@@ -21,6 +25,7 @@ def threaded_conversations(request):
 
     return render(request, 'messaging/threaded.html', {'messages': messages})
 
+@cache_page(60)
 @login_required
 def unread_inbox(request):
     # Explicitly use the required strings for the checks
