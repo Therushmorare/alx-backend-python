@@ -7,3 +7,14 @@ def create_notification(sender, instance, created, **kwargs):
     if created:
         Notification.objects.create(user=instance.receiver, message=instance)
 
+@receiver(pre_save, sender=Message)
+def log_message_edit(sender, instance, **kwargs):
+    if instance.pk:
+        try:
+            original = Message.objects.get(pk=instance.pk)
+            if original.content != instance.content:
+                # Save edit history
+                MessageHistory.objects.create(message=original, old_content=original.content)
+                instance.edited = True
+        except Message.DoesNotExist:
+            pass
