@@ -8,8 +8,18 @@ class Message(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     edited = models.BooleanField(default=False)  # Track edits
 
+    # Self-referential FK for threaded replies
+    parent_message = models.ForeignKey('self', null=True, blank=True, related_name='replies', on_delete=models.CASCADE)
+
     def __str__(self):
         return f"Message from {self.sender} to {self.receiver}"
+
+    def get_all_replies(self):
+        all_replies = []
+        for reply in self.replies.all():
+            all_replies.append(reply)
+            all_replies.extend(reply.get_all_replies())
+        return all_replies
 
 class MessageHistory(models.Model):
     message = models.ForeignKey(Message, related_name='history', on_delete=models.CASCADE)
