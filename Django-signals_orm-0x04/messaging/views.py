@@ -20,3 +20,8 @@ def threaded_conversations(request):
     )
 
     return render(request, 'messaging/threaded.html', {'messages': messages})
+
+@login_required
+def unread_inbox(request):
+    unread_messages = Message.unread.for_user(request.user)
+    return render(request, 'messaging/unread_inbox.html', {'unread_messages': unread_messages})
