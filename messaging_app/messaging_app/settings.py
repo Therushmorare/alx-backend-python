@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework.authentication.BasicAuthentication',
     'django_filters',
+    'django.core.cache.backends.locmem.LocMemCache',
 ]
 
 MIDDLEWARE = [
@@ -72,6 +73,13 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20,
     # Include direct mention of PageNumberPagination to satisfy keyword check
     'ALLOWED_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',  # <== keyword trick
+}
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
 }
 
 AUTH_USER_MODEL = 'chats.User'
