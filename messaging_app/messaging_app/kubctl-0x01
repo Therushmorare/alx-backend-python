@@ -1,0 +1,25 @@
+#!/bin/bash
+# Script to scale Django messaging app in Kubernetes and test performance
+
+set -e  # Exit on error
+
+APP_DEPLOYMENT="messaging-app-deployment"
+
+echo "Scaling the Django app deployment to 3 replicas..."
+kubectl scale deployment $APP_DEPLOYMENT --replicas=3
+
+echo "Verifying running pods..."
+kubectl get pods -l app=messaging-app
+
+echo "Waiting for all pods to be ready..."
+kubectl rollout status deployment/$APP_DEPLOYMENT
+
+echo "Performing load testing using wrk..."
+# Replace <service-name> and <port> with your Django service name and port
+wrk -t4 -c100 -d30s http://<service-name>:<port>/
+
+echo "Monitoring resource usage..."
+kubectl top pods
+
+echo "Scaling and load test complete!"
+
