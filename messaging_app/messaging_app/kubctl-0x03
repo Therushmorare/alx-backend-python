@@ -1,0 +1,28 @@
+#!/bin/bash
+# Script for zero-downtime rolling update
+
+set -e
+
+DEPLOYMENT="django-blue"
+NAMESPACE="default"
+SERVICE_URL="http://localhost/api/"   # adjust if you use Ingress
+
+echo "Applying updated deployment..."
+kubectl apply -f blue_deployment.yaml -n $NAMESPACE
+
+echo "Monitoring rollout status..."
+kubectl rollout status deployment/$DEPLOYMENT -n $NAMESPACE
+
+echo "📡 Testing for downtime with curl..."
+for i in {1..20}; do
+  if curl -s $SERVICE_URL > /dev/null; then
+    echo "[$i] App responded"
+  else
+    echo "[$i] No response"
+  fi
+  sleep 2
+done
+
+echo "Verifying current pods..."
+kubectl get pods -l app=django,version=blue -n $NAMESPACE -o wide
+
