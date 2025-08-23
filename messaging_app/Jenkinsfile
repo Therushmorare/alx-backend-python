@@ -2,26 +2,24 @@ pipeline {
     agent any
 
     environment {
-        // Change these to match your Docker Hub credentials
-        DOCKER_HUB_CREDENTIALS = 'dockerhub-credentials'  
+        // Replace with your actual GitHub repo and DockerHub credentials
+        GITHUB_REPO = 'https://github.com/your-username/alx-backend-python.git'
+        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials'
         DOCKER_IMAGE = 'your-dockerhub-username/messaging_app'
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/Therushmorare/alx-backend-python.git'
+                git branch: 'main', url: "${GITHUB_REPO}"
             }
         }
 
         stage('Install Dependencies') {
             steps {
                 sh '''
-                    cd messaging_app
-                    python3 -m venv venv
-                    source venv/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
+                    echo "Installing Python dependencies..."
+                    pip3 install -r messaging_app/requirements.txt
                 '''
             }
         }
@@ -29,44 +27,33 @@ pipeline {
         stage('Run Tests') {
             steps {
                 sh '''
-                    cd messaging_app
-                    source venv/bin/activate
-                    pytest --junitxml=report.xml
+                    echo "Running tests with pytest..."
+                    pytest --maxfail=1 --disable-warnings -q --junitxml=pytest-report.xml
                 '''
             }
             post {
                 always {
-                    junit 'messaging_app/report.xml'
+                    junit 'pytest-report.xml'
                 }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh '''
-                    cd messaging_app
-                    docker build -t $DOCKER_IMAGE:$BUILD_NUMBER .
-                '''
+                script {
+                    dockerImage = docker.build("${DOCKER_IMAGE}:latest", "messaging_app")
+                }
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDENTIALS}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push $DOCKER_IMAGE:$BUILD_NUMBER
-                        docker tag $DOCKER_IMAGE:$BUILD_NUMBER $DOCKER_IMAGE:latest
-                        docker push $DOCKER_IMAGE:latest
-                    '''
+                script {
+                    docker.withRegistry('', DOCKERHUB_CREDENTIALS) {
+                        dockerImage.push("latest")
+                    }
                 }
             }
-        }
-    }
-
-    post {
-        always {
-            cleanWs()
         }
     }
 }
