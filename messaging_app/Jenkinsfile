@@ -1,0 +1,54 @@
+pipeline {
+    agent any
+
+    tools {
+        // ShiningPanda plugin manages Python envs
+        python 'Python3'
+    }
+
+    environment {
+        GITHUB_CREDENTIALS = credentials('github-creds')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/alx-backend/alx-backend-python.git',
+                    credentialsId: "${GITHUB_CREDENTIALS}"
+            }
+        }
+
+        stage('Set up Environment') {
+            steps {
+                sh '''
+                cd messaging_app
+                python3 -m venv venv
+                . venv/bin/activate
+                pip install --upgrade pip
+                pip install -r requirements.txt
+                '''
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                sh '''
+                cd messaging_app
+                . venv/bin/activate
+                pytest --maxfail=1 --disable-warnings -q --junitxml=report.xml
+                '''
+            }
+        }
+
+        stage('Archive Test Report') {
+            steps {
+                junit 'messaging_app/report.xml'
+            }
+        }
+    }
+
+    triggers {
+        // manual trigger only — no SCM polling or webhooks
+    }
+}
