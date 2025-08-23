@@ -2,58 +2,40 @@ pipeline {
     agent any
 
     environment {
-        // Replace with your actual GitHub repo and DockerHub credentials
-        GITHUB_REPO = 'https://github.com/your-username/alx-backend-python.git'
-        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials'
-        DOCKER_IMAGE = 'your-dockerhub-username/messaging_app'
+        // Replace with your GitHub credentials ID stored in Jenkins
+        GITHUB_CREDENTIALS = credentials('your-github-credentials-id')
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: "${GITHUB_REPO}"
+                git branch: 'main',
+                    url: 'https://github.com/your-org/messaging_app.git',
+                    credentialsId: 'your-github-credentials-id'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                sh '''
-                    echo "Installing Python dependencies..."
-                    pip3 install -r messaging_app/requirements.txt
-                '''
+                sh 'pip3 install -r messaging_app/requirements.txt'
             }
         }
 
         stage('Run Tests') {
             steps {
-                sh '''
-                    echo "Running tests with pytest..."
-                    pytest --maxfail=1 --disable-warnings -q --junitxml=pytest-report.xml
-                '''
+                sh 'pytest --maxfail=1 --disable-warnings -q --junitxml=test-results/report.xml'
             }
             post {
                 always {
-                    junit 'pytest-report.xml'
+                    junit 'test-results/report.xml'
                 }
             }
         }
+    }
 
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    dockerImage = docker.build("${DOCKER_IMAGE}:latest", "messaging_app")
-                }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                script {
-                    docker.withRegistry('', DOCKERHUB_CREDENTIALS) {
-                        dockerImage.push("latest")
-                    }
-                }
-            }
+    post {
+        always {
+            echo 'Pipeline finished'
         }
     }
 }
