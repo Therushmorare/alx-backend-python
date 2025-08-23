@@ -2,40 +2,73 @@ pipeline {
     agent any
 
     environment {
-        // Replace with your GitHub credentials ID stored in Jenkins
-        GITHUB_CREDENTIALS = credentials('your-github-credentials-id')
+        DOCKER_IMAGE = "your-dockerhub-username/messaging_app"
+        DOCKER_TAG = "latest"
     }
 
     stages {
         stage('Checkout') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/your-org/messaging_app.git',
-                    credentialsId: 'your-github-credentials-id'
+                    url: 'https://github.com/your-username/alx-backend-python.git',
+                    credentialsId: 'your-github-credentials'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                sh 'pip3 install -r messaging_app/requirements.txt'
+                sh '''
+                    cd messaging_app
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip3 install --upgrade pip
+                    pip3 install -r requirements.txt
+                '''
             }
         }
 
         stage('Run Tests') {
             steps {
-                sh 'pytest --maxfail=1 --disable-warnings -q --junitxml=test-results/report.xml'
+                sh '''
+                    cd messaging_app
+                    . venv/bin/activate
+                    pytest --maxfail=1 --disable-warnings -q --junitxml=report.xml
+                '''
             }
             post {
                 always {
-                    junit 'test-results/report.xml'
+                    junit 'messaging_app/report.xml'
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                    cd messaging_app
+                    docker build -t $DOCKER_IMAGE:$DOCKER_TAG .
+                '''
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push $DOCKER_IMAGE:$DOCKER_TAG
+                    '''
                 }
             }
         }
     }
 
     post {
-        always {
-            echo 'Pipeline finished'
+        success {
+            echo "Build and Docker push completed successfully!"
+        }
+        failure {
+            echo "Build failed. Check logs!"
         }
     }
 }
