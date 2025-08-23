@@ -2,57 +2,71 @@ pipeline {
     agent any
 
     environment {
-        // Use Jenkins credentials plugin for GitHub + DockerHub
-        GITHUB_CREDENTIALS = credentials('github-credentials-id')
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials-id')
+        // Change these to match your Docker Hub credentials
+        DOCKER_HUB_CREDENTIALS = 'dockerhub-credentials'  
+        DOCKER_IMAGE = 'your-dockerhub-username/messaging_app'
     }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                git branch: 'main',
-                    credentialsId: "${GITHUB_CREDENTIALS}",
-                    url: 'https://github.com/your-username/alx-backend-python.git'
+                git branch: 'main', url: 'https://github.com/Therushmorare/alx-backend-python.git'
             }
         }
 
         stage('Install Dependencies') {
             steps {
-                dir('messaging_app') {
-                    sh 'pip3 install -r requirements.txt'
-                }
+                sh '''
+                    cd messaging_app
+                    python3 -m venv venv
+                    source venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                '''
             }
         }
 
         stage('Run Tests') {
             steps {
-                dir('messaging_app') {
-                    sh 'pytest --maxfail=1 --disable-warnings -q --junitxml=test-results.xml'
-                }
+                sh '''
+                    cd messaging_app
+                    source venv/bin/activate
+                    pytest --junitxml=report.xml
+                '''
             }
             post {
                 always {
-                    junit 'messaging_app/test-results.xml'
+                    junit 'messaging_app/report.xml'
                 }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                dir('messaging_app') {
-                    script {
-                        sh 'docker build -t your-dockerhub-username/messaging_app_image .'
-                    }
-                }
+                sh '''
+                    cd messaging_app
+                    docker build -t $DOCKER_IMAGE:$BUILD_NUMBER .
+                '''
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                withDockerRegistry([ credentialsId: "${DOCKERHUB_CREDENTIALS}", url: '' ]) {
-                    sh 'docker push your-dockerhub-username/messaging_app_image'
+                withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDENTIALS}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push $DOCKER_IMAGE:$BUILD_NUMBER
+                        docker tag $DOCKER_IMAGE:$BUILD_NUMBER $DOCKER_IMAGE:latest
+                        docker push $DOCKER_IMAGE:latest
+                    '''
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
         }
     }
 }
