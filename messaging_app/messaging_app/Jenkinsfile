@@ -1,54 +1,58 @@
 pipeline {
     agent any
 
-    tools {
-        // ShiningPanda plugin manages Python envs
-        python 'Python3'
-    }
-
     environment {
-        GITHUB_CREDENTIALS = credentials('github-creds')
+        // Use Jenkins credentials plugin for GitHub + DockerHub
+        GITHUB_CREDENTIALS = credentials('github-credentials-id')
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials-id')
     }
 
     stages {
         stage('Checkout') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/alx-backend/alx-backend-python.git',
-                    credentialsId: "${GITHUB_CREDENTIALS}"
+                    credentialsId: "${GITHUB_CREDENTIALS}",
+                    url: 'https://github.com/your-username/alx-backend-python.git'
             }
         }
 
-        stage('Set up Environment') {
+        stage('Install Dependencies') {
             steps {
-                sh '''
-                cd messaging_app
-                python3 -m venv venv
-                . venv/bin/activate
-                pip install --upgrade pip
-                pip install -r requirements.txt
-                '''
+                dir('messaging_app') {
+                    sh 'pip3 install -r requirements.txt'
+                }
             }
         }
 
         stage('Run Tests') {
             steps {
-                sh '''
-                cd messaging_app
-                . venv/bin/activate
-                pytest --maxfail=1 --disable-warnings -q --junitxml=report.xml
-                '''
+                dir('messaging_app') {
+                    sh 'pytest --maxfail=1 --disable-warnings -q --junitxml=test-results.xml'
+                }
+            }
+            post {
+                always {
+                    junit 'messaging_app/test-results.xml'
+                }
             }
         }
 
-        stage('Archive Test Report') {
+        stage('Build Docker Image') {
             steps {
-                junit 'messaging_app/report.xml'
+                dir('messaging_app') {
+                    script {
+                        sh 'docker build -t your-dockerhub-username/messaging_app_image .'
+                    }
+                }
             }
         }
-    }
 
-    triggers {
-        // manual trigger only — no SCM polling or webhooks
+        stage('Push Docker Image') {
+            steps {
+                withDockerRegistry([ credentialsId: "${DOCKERHUB_CREDENTIALS}", url: '' ]) {
+                    sh 'docker push your-dockerhub-username/messaging_app_image'
+                }
+            }
+        }
     }
 }
